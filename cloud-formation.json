@@ -1,0 +1,83 @@
+{
+    "AWSTemplateFormatVersion":"2010-09-09",
+    "Description": "GoFit Cognito UserPool stack",
+    "Parameters":{
+        "ResourcePrefix": {
+            "Type": "String",
+            "Description": "Resource prefix to use when creating necessary objects",
+            "AllowedPattern": "^[a-z0-9][a-z0-9-]+$",
+            "ConstraintDescription": "Resource prefix can only contain lower-case letters, numbers, and dashes",
+            "MaxLength": 30
+        }
+    },
+    "Resources": {
+        "CognitoUserPool": {
+            "Type": "AWS::Cognito::UserPool",
+            "Properties": {
+                "UserPoolName": {
+                    "Fn::Join": ["",[{"Ref": "ResourcePrefix"},"-user-pool"]]
+                }
+            }
+        },
+        "CognitoUserPoolClient":{
+            "Type" : "AWS::Cognito::UserPoolClient",
+            "Properties" : {
+              "ClientName" : {
+                "Fn::Join": ["",[{"Ref": "ResourcePrefix"},"-user-pool-client"]]
+              },
+              "UserPoolId" : {"Ref": "CognitoUserPool"}
+            }
+        },
+        "CognitoIdentityPool": {
+            "Type" : "AWS::Cognito::IdentityPool",
+            "Properties" : {
+              "IdentityPoolName" : {
+                "Fn::Join": ["",[{"Ref": "ResourcePrefix"},"-identity-pool"]]
+              },
+              "AllowUnauthenticatedIdentities" : true, 
+              "SupportedLoginProviders" : { String:String, ... },
+              "CognitoIdentityProviders" : [ CognitoIdentityProvider, ... ]
+            }
+        },
+        "SNSRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [{
+                        "Effect": "Allow",
+                        "Principal": {
+                            "Service": ["cognito-idp.amazonaws.com"]
+                        },
+                        "Action": ["sts:AssumeRole"]
+                    }]
+                },
+                "Policies": [{
+                    "PolicyName": "CognitoSNSPolicy",
+                    "PolicyDocument": {
+                        "Version": "2012-10-17",
+                        "Statement": [{
+                            "Effect": "Allow",
+                            "Action": "sns:publish",
+                            "Resource": "*"
+                        }]
+                    }
+                }]
+            }
+        }
+    },
+    "Outputs": {
+        "AwsAccountId": {
+            "Value": {
+                "Ref": "AWS::AccountId"
+            },
+            "Description": "Account ID of the AWS account"
+        },
+        "AwsRegion": {
+            "Value": {
+                "Ref": "AWS::Region"
+            },
+            "Description": "Region of the AWS deployment"
+        }
+    }
+}
